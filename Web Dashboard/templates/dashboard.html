@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuakeSense — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+
+    <!-- Script untuk apply sidebar state sebelum render -->
+    <script>
+      (function() {
+        const state = localStorage.getItem("sidebarState");
+        if (state === "closed") {
+          document.documentElement.setAttribute("data-sidebar-closed", "true");
+        }
+      })();
+    </script>
+    <style>
+      [data-sidebar-closed="true"] #sidebar {
+        width: 80px !important;
+      }
+      [data-sidebar-closed="true"] #mainContent {
+        margin-left: 90px !important;
+      }
+      [data-sidebar-closed="true"] #sidebarText,
+      [data-sidebar-closed="true"] #menuText span,
+      [data-sidebar-closed="true"] #logoutText span {
+        display: none !important;
+      }
+      [data-sidebar-closed="true"] #arrowIcon {
+        margin-right: 4px;
+      }
+      [data-sidebar-closed="true"] .fa-chevron-left::before {
+        content: "\f054" !important;
+      }
+    </style>
+  </head>
+
+  <body class="flex">
+    <!-- SIDEBAR -->
+    <aside
+      id="sidebar"
+      class="w-[250px] bg-gradient-to-b from-[#3A6F9E] via-[#84B1D7] to-[#A7C8E6] text-white h-screen shadow-xl fixed left-0 top-0 p-5 border-r border-[#c9e3f2] flex flex-col transition-all duration-300"
+    >
+      <!-- TOMBOL PANAH -->
+      <button
+        id="toggleSidebar"
+        class="absolute -right-4 top-4 bg-white text-gray-700 p-2 rounded-full shadow-lg transition"
+      >
+        <i id="arrowIcon" class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="mb-6 flex items-center gap-3">
+        <img src="static/img/logo.png" class="h-10 w-auto object-contain" />
+
+        <div id="sidebarText">
+          <h1 class="text-lg font-bold">QuakeSense</h1>
+          <p class="text-xs opacity-90">Monitoring Gempa</p>
+        </div>
+      </div>
+
+      <!-- Menu -->
+      <nav id="menuText" class="space-y-2 flex-1">
+        <!-- Dashboard -->
+        <a
+          href="/"
+          class="menu-active flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-gauge"></i> <span>Dashboard</span>
+        </a>
+
+        <!-- Grafik -->
+        <a
+          href="/grafik"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Grafik Sensor</span>
+        </a>
+
+         <a
+          href="/data"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-database"></i>
+          <span>Data Sensor</span>
+        </a>
+
+        <!-- Log -->
+        <a
+          href="/log"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-bell"></i> <span>Log Aktivitas</span>
+        </a>
+      </nav>
+
+      <div class="border-t border-white/50 my-3"></div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div
+      id="mainContent"
+      class="ml-[260px] w-full p-4 transition-all duration-300"
+    >
+      <header
+        class="flex items-center justify-between px-5 py-3 border-2 border-[#6aa3cf] rounded-full bg-white mb-6 shadow-sm"
+      >
+        <!-- LEFT: TIME + DATE -->
+        <div class="flex items-center gap-3 text-[#4a86b8]">
+          <div
+            class="w-8 h-8 border-2 border-[#6aa3cf] rounded-full flex items-center justify-center"
+          >
+            <i class="fa-regular fa-clock text-[#4a86b8] text-lg"></i>
+          </div>
+
+          <div>
+            <h1 id="jamRealtime" class="text-[18px] font-semibold">-</h1>
+            <p id="tanggalRealtime" class="text-[12px] text-[#7aa9cc]">-</p>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: LIVE STATUS -->
+        <div class="flex items-center gap-2 text-green-600 font-semibold">
+          <span class="w-3 h-3 bg-green-500 rounded-full pulse-animation"></span>
+          <span>Live Monitoring</span>
+        </div>
+      </header>
+
+      <!-- DASHBOARD -->
+      <div class="space-y-6">
+        <!-- WILAYAH 1 -->
+        <div
+          class="bg-gradient-to-b from-[#A7C8E6] to-[#619AC7] text-white p-5 rounded-xl shadow-lg gradient-animate fade-in-up"
+        >
+          <div class="flex justify-between items-center">
+            <h2 class="text-[20px] font-semibold">Wilayah 1</h2>
+            <span id="statusW1" class="px-4 py-1 rounded-full font-semibold">
+              -
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 mt-4">
+            <!-- GETARAN -->
+            <div class="bg-white p-4 rounded-xl shadow-md sensor-card fade-in-up">
+              <!-- HEADER -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center float-icon">
+                    <i class="fa-solid fa-wave-square text-red-400 text-sm"></i>
+                  </div>
+                  <h4 class="text-xs text-red-400 font-semibold tracking-wide">GETARAN</h4>
+                </div>
+
+                <!-- TREND -->
+                <span id="trendGetaranW1" class="text-sm text-gray-400">
+                  <i class="fa-solid fa-minus"></i>
+                </span>
+              </div>
+
+              <!-- NILAI UTAMA -->
+              <div class="text-center">
+                <p id="valGetaranW1" class="text-[30px] font-bold text-red-500 leading-none">0</p>
+                <p class="text-[11px] text-red-300 mt-1">G-Force</p>
+              </div>
+
+              <!-- DIVIDER -->
+              <div class="border-t my-3"></div>
+
+              <!-- MAX & AVG -->
+              <div class="grid grid-cols-2 gap-2 text-center text-[11px]">
+                <div>
+                  <p class="text-gray-500 font-semibold">MAX</p>
+                  <p id="maxGetaranW1" class="text-red-500 font-semibold">0</p>
+                </div>
+
+                <div>
+                  <p class="text-gray-500 font-semibold">AVG</p>
+                  <p id="avgGetaranW1" class="text-orange-500 font-semibold">0</p>
+                </div>
+              </div>
+
+              <!-- TIMESTAMP -->
+              <p id="timeGetaranW1" class="text-[10px] text-gray-400 text-center mt-3">Update: --:--:--</p>
+
+              <!-- GRAFIK MINI -->
+              <div class="mt-3 h-20">
+                <canvas id="chartGetaranW1"></canvas>
+              </div>
+            </div>
+
+            <!-- SUHU -->
+            <div class="bg-white p-4 rounded-xl shadow-md sensor-card fade-in-up">
+              <!-- HEADER -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
+                    <i class="fa-solid fa-temperature-half text-orange-400 text-sm"></i>
+                  </div>
+                  <h4 class="text-xs text-orange-400 font-semibold">SUHU</h4>
+                </div>
+                <span id="trendSuhuW1" class="text-sm text-gray-400">
+                  <i class="fa-solid fa-minus"></i>
+                </span>
+              </div>
+
+              <!-- NILAI UTAMA -->
+              <div class="text-center">
+                <p id="valSuhuW1" class="text-[30px] font-bold text-orange-500">0</p>
+                <p class="text-[11px] text-orange-300">°C</p>
+              </div>
+
+              <!-- DIVIDER -->
+              <div class="border-t my-3"></div>
+
+              <!-- MAX & AVG -->
+              <div class="grid grid-cols-2 text-center text-[11px]">
+                <div>
+                  <p class="text-gray-500 font-semibold">MAX</p>
+                  <p id="maxSuhuW1" class="text-orange-500 font-semibold">0</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 font-semibold">AVG</p>
+                  <p id="avgSuhuW1" class="text-yellow-500 font-semibold">0</p>
+                </div>
+              </div>
+
+              <!-- TIMESTAMP -->
+              <p id="timeSuhuW1" class="text-[10px] text-gray-400 text-center mt-3">Update: --</p>
+
+              <!-- GRAFIK MINI -->
+              <div class="mt-3 h-20">
+                <canvas id="chartSuhuW1"></canvas>
+              </div>
+            </div>
+
+
+            <!-- GAS CO₂ -->
+            <div class="bg-white p-4 rounded-xl shadow-md sensor-card fade-in-up">
+              <!-- HEADER -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center">
+                    <i class="fa-solid fa-cloud text-purple-400 text-sm"></i>
+                  </div>
+                  <h4 class="text-xs text-purple-400 font-semibold">GAS CO₂</h4>
+                </div>
+                <span id="trendGasW1" class="text-sm text-gray-400">
+                  <i class="fa-solid fa-minus"></i>
+                </span>
+              </div>
+
+              <!-- NILAI UTAMA -->
+              <div class="text-center">
+                <p id="valGasW1" class="text-[30px] font-bold text-purple-500">0</p>
+                <p class="text-[11px] text-purple-300">PPM</p>
+              </div>
+
+              <!-- DIVIDER -->
+              <div class="border-t my-3"></div>
+
+              <!-- MAX & AVG -->
+              <div class="grid grid-cols-2 text-center text-[11px]">
+                <div>
+                  <p class="text-gray-500 font-semibold">MAX</p>
+                  <p id="maxGasW1" class="text-purple-500 font-semibold">0</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 font-semibold">AVG</p>
+                  <p id="avgGasW1" class="text-indigo-500 font-semibold">0</p>
+                </div>
+              </div>
+
+              <!-- TIMESTAMP -->
+              <p id="timeGasW1" class="text-[10px] text-gray-400 text-center mt-3">Update: --</p>
+
+              <!-- GRAFIK MINI -->
+              <div class="mt-3 h-20">
+                <canvas id="chartGasW1"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- KONTROL AKTUATOR WILAYAH 1 -->
+          <div class="mt-4 bg-white p-4 rounded-xl shadow-md">
+            <h4 class="text-[#1b71a8] font-semibold mb-4">Kontrol Aktuator</h4>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- SERVO -->
+              <div class="flex items-center justify-between border rounded-lg px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fa-solid fa-gear text-blue-500 text-lg"></i>
+                  </div>
+
+                  <div>
+                    <p class="text-sm font-semibold text-gray-700">Servo</p>
+                    <p class="text-xs text-gray-400">Penggerak Mekanik</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <button onclick="servoOpen('region1')" class="px-4 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 hover:bg-green-300 btn-ripple transition-all">ON</button>
+                  <button onclick="servoClose('region1')" class="px-4 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-800 hover:bg-red-300 btn-ripple transition-all">OFF</button>
+                </div>
+              </div>
+
+              <!-- BUZZER -->
+              <div class="flex items-center justify-between border rounded-lg px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <i class="fa-solid fa-volume-high text-yellow-500 text-lg"></i>
+                  </div>
+
+                  <div>
+                    <p class="text-sm font-semibold text-gray-700">Buzzer</p>
+                    <p class="text-xs text-gray-400">Alarm Peringatan</p>
+                  </div>
+                </div>
+
+                <span id="statusBuzzerW1" class="px-4 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">OFF</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- WILAYAH 2 -->
+        <div class="bg-gradient-to-b from-[#A7C8E6] to-[#619AC7] text-white p-5 rounded-xl shadow-lg gradient-animate fade-in-up">
+          <div class="flex justify-between items-center">
+            <h2 class="text-[20px] font-semibold">Wilayah 2</h2>
+            <span id="statusW2" class="bg-[#2ecc71] px-4 py-1 rounded-full text-sm font-semibold">✓ AMAN</span>
+          </div>
+
+          <!-- SENSOR GRID -->
+          <div class="grid grid-cols-2 gap-4 mt-4">
+
+            <!-- GETARAN -->
+            <div class="bg-white p-4 rounded-xl shadow-md text-gray-800 sensor-card fade-in-up">
+              <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fa-solid fa-wave-square text-red-400 text-sm"></i>
+                  </div>
+                  <h4 class="text-xs font-semibold text-red-500">GETARAN</h4>
+                </div>
+                <span id="trendGetaranW2" class="text-sm text-gray-400">
+                  <i class="fa-solid fa-minus"></i>
+                </span>
+              </div>
+
+              <div class="text-center">
+                <p id="valGetaranW2" class="text-[30px] font-bold text-red-500">0</p>
+                <p class="text-[11px] text-red-300">G-Force</p>
+              </div>
+
+              <div class="border-t my-3"></div>
+
+              <div class="grid grid-cols-2 text-center text-[11px]">
+                <div>
+                  <p class="text-gray-400">MAX</p>
+                  <p id="maxGetaranW2" class="font-semibold text-red-500">0</p>
+                </div>
+                <div>
+                  <p class="text-gray-400">AVG</p>
+                  <p id="avgGetaranW2" class="font-semibold text-orange-500">0</p>
+                </div>
+              </div>
+
+              <p id="timeGetaranW2" class="text-[10px] text-gray-400 text-center mt-3">Update: --</p>
+
+              <!-- GRAFIK MINI -->
+              <div class="mt-3 h-20">
+                <canvas id="chartGetaranW2"></canvas>
+              </div>
+            </div>
+
+            <!-- TEKANAN -->
+            <div class="bg-white p-4 rounded-xl shadow-md text-gray-800 sensor-card fade-in-up">
+              <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fa-solid fa-gauge-high text-blue-400 text-sm"></i>
+                  </div>
+                  <h4 class="text-xs font-semibold text-blue-500">TEKANAN</h4>
+                </div>
+                <span id="trendTekananW2" class="text-sm text-gray-400">
+                  <i class="fa-solid fa-minus"></i>
+                </span>
+              </div>
+
+              <div class="text-center">
+                <p id="valTekananW2" class="text-[30px] font-bold text-blue-500">0</p>
+                <p class="text-[11px] text-blue-300">hPa</p>
+              </div>
+
+              <div class="border-t my-3"></div>
+
+              <div class="grid grid-cols-2 text-center text-[11px]">
+                <div>
+                  <p class="text-gray-400">MAX</p>
+                  <p id="maxTekananW2" class="font-semibold text-blue-500">0</p>
+                </div>
+                <div>
+                  <p class="text-gray-400">AVG</p>
+                  <p id="avgTekananW2" class="font-semibold text-cyan-500">0</p>
+                </div>
+              </div>
+
+              <p id="timeTekananW2" class="text-[10px] text-gray-400 text-center mt-3">Update: --</p>
+
+              <!-- GRAFIK MINI -->
+              <div class="mt-3 h-20">
+                <canvas id="chartTekananW2"></canvas>
+              </div>
+            </div>
+          </div>
+          <!-- END SENSOR GRID -->
+
+          <!-- AKTUATOR -->
+          <div class="mt-5 bg-white p-4 rounded-xl shadow-md text-gray-800">
+            <h4 class="font-semibold mb-4">Kontrol Aktuator</h4>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- SERVO -->
+              <div class="flex justify-between items-center border rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fa-solid fa-gear text-blue-500 text-lg"></i>
+                  <div>
+                    <p class="font-semibold">Servo</p>
+                    <p class="text-xs text-gray-400">Penggerak</p>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="servoOpen('region2')" class="bg-green-200 px-3 py-1 rounded-full text-xs font-semibold hover:bg-green-300 btn-ripple transition-all">ON</button>
+                  <button onclick="servoClose('region2')" class="bg-red-200 px-3 py-1 rounded-full text-xs font-semibold hover:bg-red-300 btn-ripple transition-all">OFF</button>
+                </div>
+              </div>
+
+              <!-- BUZZER -->
+              <div class="flex justify-between items-center border rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fa-solid fa-volume-high text-yellow-500 text-lg"></i>
+                  <div>
+                    <p class="font-semibold">Buzzer</p>
+                    <p class="text-xs text-gray-400">Alarm</p>
+                  </div>
+                </div>
+                <span id="statusBuzzerW2" class="px-4 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold">OFF</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END WILAYAH 2 -->
+
+      </div>
+    </div>
+
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/grafikwil1.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/grafikwil2.js') }}"></script>
+  </body>
+</html>

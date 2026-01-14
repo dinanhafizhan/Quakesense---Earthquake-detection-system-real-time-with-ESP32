@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>QuakeSense — Status & Region Data</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root { --bg:#f4f7fb; --card:#fff; --muted:#6b7280; --accent:#2563eb; --good:#22c55e; --bad:#ef4444; --panel:#fafbff; }
+      body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: var(--bg); margin:0; padding:20px; color:#222; }
+      h1 { margin:0 0 12px 0; font-size:20px; }
+      .card { background:var(--card); border-radius:8px; padding:16px; box-shadow:0 1px 4px rgba(20,30,50,0.06); margin-bottom:12px; }
+      .row { display:flex; gap:12px; flex-wrap:wrap; }
+      .box { flex:1 1 260px; padding:12px; border-radius:6px; background:var(--panel); border:1px solid #eef2ff; }
+      .status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+      .green { background:var(--good); }
+      .red { background:var(--bad); }
+      .muted { color:var(--muted); font-size:13px; }
+      table { width:100%; border-collapse:collapse; margin-top:8px; background:#fff; border-radius:6px; overflow:hidden; }
+      th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #eef2ff; font-size:13px; }
+      thead th { background:#fafcff; font-weight:600; }
+      tr.new { background:linear-gradient(90deg, rgba(37,99,235,0.06), rgba(37,99,235,0.02)); }
+      .small { font-size:13px; color:#475569; }
+      .btn { padding:8px 12px; background:var(--accent); color:#fff; border-radius:6px; cursor:pointer; border:none; }
+      .debug { font-family:monospace; font-size:12px; color:#334155; background:#f8fafc; padding:8px; border-radius:6px; margin-top:8px; }
+      .flex-between { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+      .title { font-weight:600; margin:8px 0; }
+      .status { font-size:18px; font-weight:700; }
+      .ts { color:#666; font-size:12px; margin-top:6px; }
+      .switch { position: relative; display: inline-block; width: 50px; height: 26px; vertical-align: middle; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+      .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+      input:checked + .slider { background-color: #2563eb; }
+      input:checked + .slider:before { transform: translateX(24px); }
+    </style>
+  </head>
+  <body>
+    <h1>QuakeSense — Status & Region Data</h1>
+    
+    <div class="card">
+      <div class="title">Region 1</div>
+      <div id="r1" class="status">-</div>
+      <div id="r1ts" class="ts"></div>
+      <div class="title">Region 2</div>
+      <div id="r2" class="status">-</div>
+      <div id="r2ts" class="ts"></div>
+      <div class="row">
+        <div class="box" id="mqttBox">
+          <div class="flex-between">
+            <div><strong>MQTT Broker</strong></div>
+            <div><button id="btnPing" class="btn small">Test MQTT</button></div>
+          </div>
+          <div class="small" id="mqttBroker">-</div>
+          <div style="margin-top: 10px">
+            <span id="mqttDot" class="status-dot red"></span>
+            <span id="mqttText" class="muted">Checking...</span>
+          </div>
+          <div style="margin-top: 10px" class="muted">
+            Last message: <span id="mqttLast">-</span><br />
+            Messages received: <span id="mqttCount">0</span>
+          </div>
+          <div id="mqttPingResult" class="debug" style="display: none; margin-top: 10px"></div>
+        </div>
+
+        <div class="box" id="apiBox">
+          <div><strong>API</strong></div>
+          <div class="small">Health endpoint</div>
+          <div style="margin-top: 10px">
+            <span id="apiDot" class="status-dot green"></span>
+            <span id="apiText" class="muted">API reachable</span>
+          </div>
+          <div style="margin-top: 10px">
+            <a class="btn" href="/docs" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: white">Open API Docs</a>
+          </div>
+        </div>
+
+        <div class="box" id="servoBoxR1">
+          <div class="flex-between">
+            <div><strong>Servo Region 1</strong></div>
+            <div class="small muted">Kontrol 0° - 90°</div>
+          </div>
+          <div style="margin-top:15px; display:flex; align-items:center; gap:10px;">
+            <label class="switch">
+              <input type="checkbox" id="toggleR1">
+              <span class="slider"></span>
+            </label>
+            <span id="labelR1" class="small">Posisi: 0°</span>
+          </div>
+          <div id="servoResultR1" class="debug" style="display:none; margin-top:8px;"></div>
+        </div>
+
+        <div class="box" id="servoBoxR2">
+          <div class="flex-between">
+            <div><strong>Servo Region 2</strong></div>
+            <div class="small muted">Kontrol 0° - 90°</div>
+          </div>
+          <div style="margin-top:15px; display:flex; align-items:center; gap:10px;">
+            <label class="switch">
+              <input type="checkbox" id="toggleR2">
+              <span class="slider"></span>
+            </label>
+            <span id="labelR2" class="small">Posisi: 0°</span>
+          </div>
+          <div id="servoResultR2" class="debug" style="display:none; margin-top:8px;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Statistik Data (Max & Rata-rata)</div>
+      <div class="row">
+        <div class="box">
+          <div class="flex-between">
+            <strong>Region 1</strong>
+            <span class="small muted">Getaran | Suhu | Gas</span>
+          </div>
+          <table style="margin-top:10px; border:none;">
+            <tr>
+              <td><strong>Max</strong></td>
+              <td id="statR1_max_vib">-</td>
+              <td id="statR1_max_temp">-</td>
+              <td id="statR1_max_gas">-</td>
+            </tr>
+            <tr>
+              <td><strong>Avg</strong></td>
+              <td id="statR1_avg_vib">-</td>
+              <td id="statR1_avg_temp">-</td>
+              <td id="statR1_avg_gas">-</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="box">
+          <div class="flex-between">
+            <strong>Region 2</strong>
+            <span class="small muted">Getaran | Tekanan</span>
+          </div>
+          <table style="margin-top:10px; border:none;">
+            <tr>
+              <td><strong>Max</strong></td>
+              <td id="statR2_max_vib">-</td>
+              <td id="statR2_max_pres">-</td>
+            </tr>
+            <tr>
+              <td><strong>Avg</strong></td>
+              <td id="statR2_avg_vib">-</td>
+              <td id="statR2_avg_pres">-</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex-between">
+        <div><strong>Region 1 — Recent Data (latest 20)</strong></div>
+        <div class="muted small">Auto-refresh setiap 3 detik</div>
+      </div>
+      <table id="dataTableR1">
+        <thead>
+          <tr><th>ID</th><th>Getaran</th><th>Suhu</th><th>Gas</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody id="dataBodyR1">
+          <tr><td colspan="5" class="muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <div><strong>Region 2 — Recent Data (latest 20)</strong></div>
+        <div class="muted small">Auto-refresh setiap 3 detik</div>
+      </div>
+      <table id="dataTableR2">
+        <thead>
+          <tr><th>ID</th><th>Getaran</th><th>Tekanan</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody id="dataBodyR2">
+          <tr><td colspan="4" class="muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div><strong>Raw health JSON</strong></div>
+      <pre id="rawJson" style="white-space: pre-wrap; margin-top: 8px; font-size: 13px; background: #f8fafc; padding: 10px; border-radius: 6px;">-</pre>
+    </div>
+
+    <script>
+      let lastSeenR1 = null;
+      let lastSeenR2 = null;
+      const POLL_INTERVAL = 3000;
+      const DATA_LIMIT = 20;
+
+      async function fetchHealth() {
+        try {
+          const res = await fetch("/api/health", { cache: "no-store" });
+          const data = await res.json();
+          document.getElementById("rawJson").textContent = JSON.stringify(data, null, 2);
+
+          const mqtt = data.mqtt || {};
+          document.getElementById("mqttBroker").textContent = mqtt.broker || "-";
+          document.getElementById("mqttLast").textContent = mqtt.last_msg_iso || "-";
+          document.getElementById("mqttCount").textContent = mqtt.messages_received || 0;
+          document.getElementById("mqttDot").className = mqtt.connected ? "status-dot green" : "status-dot red";
+          document.getElementById("mqttText").textContent = mqtt.connected ? "MQTT connected" : "MQTT disconnected";
+
+          document.getElementById("apiDot").className = "status-dot green";
+          document.getElementById("apiText").textContent = "API reachable";
+        } catch (e) {
+          document.getElementById("rawJson").textContent = "Error: " + e;
+        }
+      }
+
+      function fmt(v, d = 2) {
+        if (v === null || v === undefined) return "-";
+        if (typeof v === "number") return v.toFixed(d);
+        const n = Number(v);
+        return isNaN(n) ? String(v) : n.toFixed(d);
+      }
+
+      async function fetchR1() {
+        try {
+          const res = await fetch(`/api/data/region1?limit=${DATA_LIMIT}`, { cache: "no-store" });
+          const rows = await res.json();
+          const tbody = document.getElementById("dataBodyR1");
+          tbody.textContent = "";
+          if (!rows || !rows.length) {
+            const tr = document.createElement("tr"); const td = document.createElement("td");
+            td.colSpan = 5; td.className = "muted"; td.textContent = "No data for Region 1";
+            tr.appendChild(td); tbody.appendChild(tr); return;
+          }
+          rows.forEach((r) => {
+            const tr = document.createElement("tr");
+            if (lastSeenR1 !== null && (r.id || 0) > lastSeenR1) tr.classList.add("new");
+            [r.id, fmt(r.getaran), fmt(r.suhu), fmt(r.gas), r.timestamp || "-"].forEach((cell) => {
+              const td = document.createElement("td"); td.textContent = String(cell); tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          const maxId = Math.max(...rows.map((x) => x.id || 0));
+          lastSeenR1 = Math.max(lastSeenR1 || 0, maxId);
+        } catch (e) {
+          const tbody = document.getElementById("dataBodyR1");
+          tbody.textContent = "";
+          const tr = document.createElement("tr"); const td = document.createElement("td");
+          td.colSpan = 5; td.className = "muted"; td.textContent = `Error: ${e}`;
+          tr.appendChild(td); tbody.appendChild(tr);
+        }
+      }
+
+      async function fetchR2() {
+        try {
+          const res = await fetch(`/api/data/region2?limit=${DATA_LIMIT}`, { cache: "no-store" });
+          const rows = await res.json();
+          const tbody = document.getElementById("dataBodyR2");
+          tbody.textContent = "";
+          if (!rows || !rows.length) {
+            const tr = document.createElement("tr"); const td = document.createElement("td");
+            td.colSpan = 4; td.className = "muted"; td.textContent = "No data for Region 2";
+            tr.appendChild(td); tbody.appendChild(tr); return;
+          }
+          rows.forEach((r) => {
+            const tr = document.createElement("tr");
+            if (lastSeenR2 !== null && (r.id || 0) > lastSeenR2) tr.classList.add("new");
+            [r.id, fmt(r.getaran), fmt(r.tekanan), r.timestamp || "-"].forEach((cell) => {
+              const td = document.createElement("td"); td.textContent = String(cell); tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          const maxId = Math.max(...rows.map((x) => x.id || 0));
+          lastSeenR2 = Math.max(lastSeenR2 || 0, maxId);
+        } catch (e) {
+          const tbody = document.getElementById("dataBodyR2");
+          tbody.textContent = "";
+          const tr = document.createElement("tr"); const td = document.createElement("td");
+          td.colSpan = 4; td.className = "muted"; td.textContent = `Error: ${e}`;
+          tr.appendChild(td); tbody.appendChild(tr);
+        }
+      }
+
+      async function doPingMQTT() {
+        const out = document.getElementById("mqttPingResult");
+        out.style.display = "block";
+        out.textContent = "Pinging MQTT broker...";
+        try {
+          const res = await fetch("/api/mqtt/ping", { cache: "no-store" });
+          const data = await res.json();
+          out.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          out.textContent = "Error pinging MQTT: " + err;
+        }
+      }
+
+      document.getElementById("btnPing").addEventListener("click", doPingMQTT);
+
+      async function pollAll() {
+        await Promise.allSettled([fetchHealth(), fetchR1(), fetchR2(), fetchStats()]);
+      }
+
+      pollAll();
+      setInterval(pollAll, POLL_INTERVAL);
+
+      async function loadStatus() {
+        try {
+          const res = await fetch('/api/status', { cache: 'no-store' });
+          const data = await res.json();
+
+          const r1 = (data.region1 && data.region1.status) || '-';
+          const r1ts = (data.region1 && data.region1.ts_iso) || '';
+          const r2 = (data.region2 && data.region2.status) || '-';
+          const r2ts = (data.region2 && data.region2.ts_iso) || '';
+
+          const r1el = document.getElementById('r1');
+          const r2el = document.getElementById('r2');
+          r1el.textContent = r1; r2el.textContent = r2;
+          r1el.className = 'status ' + String(r1 || '').replace(/\s/g, '_');
+          r2el.className = 'status ' + String(r2 || '').replace(/\s/g, '_');
+          document.getElementById('r1ts').textContent = r1ts ? ('Update: ' + r1ts) : '';
+          document.getElementById('r2ts').textContent = r2ts ? ('Update: ' + r2ts) : '';
+        } catch (e) { console.error(e); }
+      }
+
+      loadStatus();
+      setInterval(loadStatus, 2000);
+
+      // ---------- Servo UI per region ----------
+      function bindServoUI(region) {
+        const toggle = document.getElementById('toggle' + region);
+        const label = document.getElementById('label' + region);
+        const resultEl = document.getElementById('servoResult' + region);
+
+        toggle.addEventListener('change', async () => {
+          // Jika ON = 90 derajat, Jika OFF = 0 derajat
+          const targetAngle = toggle.checked ? 90 : 0;
+          
+          // Update Label UI
+          label.textContent = toggle.checked ? "Posisi: 90° (Aktif)" : "Posisi: 0° (Reset)";
+          
+          resultEl.style.display = 'block';
+          resultEl.textContent = 'Mengirim perintah...';
+
+          try {
+            // Kirim ke API (menggunakan perbaikan backend sebelumnya: r1 -> region1)
+            const res = await fetch('/api/servo/' + region.toLowerCase(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ angle: targetAngle }),
+            });
+            const data = await res.json();
+            
+            if (data.ok) {
+                resultEl.textContent = "Sukses: Servo ke " + targetAngle + "°";
+                setTimeout(() => { resultEl.style.display = 'none'; }, 2000); // Sembunyikan pesan sukses setelah 2 detik
+            } else {
+                resultEl.textContent = "Gagal: " + (data.error || "Unknown error");
+                // Kembalikan posisi tombol jika gagal
+                toggle.checked = !toggle.checked;
+            }
+          } catch (e) {
+            resultEl.textContent = 'Error koneksi: ' + e;
+            toggle.checked = !toggle.checked;
+          }
+        });
+      }
+
+      bindServoUI('R1');
+      bindServoUI('R2');  
+
+      async function fetchStats() {
+        try {
+          const res = await fetch("/api/data/stats", { cache: "no-store" });
+          const data = await res.json();
+          const r1 = data.region1 || {};
+          const r2 = data.region2 || {};
+
+          // Update Region 1 (Getaran, Suhu, Gas)
+          document.getElementById("statR1_max_vib").textContent = fmt(r1.max_getaran);
+          document.getElementById("statR1_avg_vib").textContent = fmt(r1.avg_getaran);
+          document.getElementById("statR1_max_temp").textContent = fmt(r1.max_suhu) + "°C";
+          document.getElementById("statR1_avg_temp").textContent = fmt(r1.avg_suhu) + "°C";
+          document.getElementById("statR1_max_gas").textContent = fmt(r1.max_gas);
+          document.getElementById("statR1_avg_gas").textContent = fmt(r1.avg_gas);
+
+          // Update Region 2 (Getaran, Tekanan)
+          document.getElementById("statR2_max_vib").textContent = fmt(r2.max_getaran);
+          document.getElementById("statR2_avg_vib").textContent = fmt(r2.avg_getaran);
+          document.getElementById("statR2_max_pres").textContent = fmt(r2.max_tekanan) + " hPa";
+          document.getElementById("statR2_avg_pres").textContent = fmt(r2.avg_tekanan) + " hPa";
+
+        } catch (e) {
+          console.error("Gagal load stats:", e);
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuakeSense — Grafik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/grafik.css') }}" />
+
+    <!-- Script untuk apply sidebar state sebelum render -->
+    <script>
+      (function() {
+        const state = localStorage.getItem("sidebarState");
+        if (state === "closed") {
+          document.documentElement.setAttribute("data-sidebar-closed", "true");
+        }
+      })();
+    </script>
+    <style>
+      [data-sidebar-closed="true"] #sidebar {
+        width: 80px !important;
+      }
+      [data-sidebar-closed="true"] #mainContent {
+        margin-left: 90px !important;
+      }
+      [data-sidebar-closed="true"] #sidebarText,
+      [data-sidebar-closed="true"] #menuText span,
+      [data-sidebar-closed="true"] #logoutText span {
+        display: none !important;
+      }
+      [data-sidebar-closed="true"] #arrowIcon {
+        margin-right: 4px;
+      }
+      [data-sidebar-closed="true"] .fa-chevron-left::before {
+        content: "\f054" !important;
+      }
+    </style>
+  </head>
+
+  <body class="flex">
+    <!-- SIDEBAR -->
+    <aside
+      id="sidebar"
+      class="w-[250px] bg-gradient-to-b from-[#3A6F9E] via-[#84B1D7] to-[#A7C8E6] text-white h-screen shadow-xl fixed left-0 top-0 p-5 border-r border-[#c9e3f2] flex flex-col transition-all duration-300"
+    >
+      <!-- TOMBOL PANAH -->
+      <button
+        id="toggleSidebar"
+        class="absolute -right-4 top-4 bg-white text-gray-700 p-2 rounded-full shadow-lg transition"
+      >
+        <i id="arrowIcon" class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="mb-6 flex items-center gap-3">
+        <img src="static/img/logo.png" class="h-10 w-auto object-contain" />
+
+        <div id="sidebarText">
+          <h1 class="text-lg font-bold">QuakeSense</h1>
+          <p class="text-xs opacity-90">Monitoring Gempa</p>
+        </div>
+      </div>
+
+      <!-- Menu -->
+      <nav id="menuText" class="space-y-2 flex-1">
+        <!-- Dashboard -->
+        <a
+          href="/"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-gauge"></i> <span>Dashboard</span>
+        </a>
+
+        <!-- Grafik -->
+        <a
+          href="/grafik"
+          class="menu-active flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Grafik Sensor</span>
+        </a>
+
+        <a
+          href="/data"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373]"
+        >
+          <i class="fa-solid fa-database"></i>
+          <span>Data Sensor</span>
+        </a>
+
+        <!-- Log -->
+        <a
+          href="/log"
+          class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer"
+        >
+          <i class="fa-solid fa-bell"></i> <span>Log Aktivitas</span>
+        </a>
+      </nav>
+
+      <div class="border-t border-white/50 my-3"></div>
+
+      <!-- Logout -->
+      
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div
+      id="mainContent"
+      class="ml-[260px] w-full p-4 transition-all duration-300"
+    >
+      <!-- HEADER -->
+      <header
+        class="flex items-center justify-between px-5 py-3 border-2 border-[#6aa3cf] rounded-full bg-white mb-6 shadow-sm"
+      >
+        <!-- LEFT -->
+        <div class="flex items-center gap-3 text-[#4a86b8]">
+          <div
+            class="w-8 h-8 border-2 border-[#6aa3cf] rounded-full flex items-center justify-center"
+          >
+            <i class="fa-regular fa-clock text-[#4a86b8] text-lg"></i>
+          </div>
+
+          <div>
+            <h1 id="jamRealtime" class="text-[18px] font-semibold">17.07.15</h1>
+            <p id="tanggalRealtime" class="text-[12px] text-[#7aa9cc]">
+              Minggu, 27 September 2025
+            </p>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="flex items-center gap-2 text-green-600 font-semibold">
+          <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+          <span>Live Monitoring</span>
+        </div>
+      </header>
+
+      <!-- ========================================================= -->
+      <!--                        WILAYAH 1                          -->
+      <!-- ========================================================= -->
+      <!-- FILTER WILAYAH -->
+      <div class="px-6 mb-4 flex items-center gap-4">
+        <label class="font-semibold text-[#1b71a8]"> Pilih Wilayah: </label>
+
+        <select
+          id="selectWilayah"
+          class="border border-[#6aa3cf] bg-white px-4 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6aa3cf] hover:border-[#1b71a8] transition"
+          onchange="toggleWilayah()"
+        >
+          <option value="1">Wilayah 1</option>
+          <option value="2">Wilayah 2</option>
+        </select>
+      </div>
+
+      <section class="px-6 py-6 max-w-full overflow-hidden">
+        <!-- ===================== WILAYAH 1 ===================== -->
+        <div
+          id="wilayah1"
+          class="bg-gradient-to-b from-[#A7C8E6] to-[#619AC7] text-white rounded-xl shadow-lg p-6 mb-8 gradient-animate fade-in-up max-w-full"
+        >
+          <h2 class="text-xl font-semibold mb-4">Wilayah 1</h2>
+
+          <div class="flex flex-col gap-6">
+
+            <!-- Getaran W1 -->
+            <div class="bg-gray-50 p-4 rounded-lg shadow chart-card fade-in-up">
+              <h3
+                class="text-[#1b71a8] font-semibold mb-2 flex items-center justify-between"
+              >
+                <span>Getaran (W1)</span>
+                <span class="flex items-center gap-3 text-gray-500">
+                  <i
+                    class="fa-solid fa-expand cursor-pointer text-sm hover:text-blue-600 transition icon-hover"
+                    onclick="fullscreen(this)"
+                    title="Fullscreen"
+                  ></i>
+                  <i
+                    class="fa-solid fa-download cursor-pointer text-sm hover:text-green-600 transition icon-hover"
+                    onclick="downloadChart('chartGetaranW1')"
+                    title="Download"
+                  ></i>
+                </span>
+              </h3>
+              <div class="h-64">
+                <canvas id="chartGetaranW1"></canvas>
+              </div>
+            </div>
+
+            <!-- Suhu W1 -->
+            <div class="bg-gray-50 p-4 rounded-lg shadow">
+              <h3
+                class="text-[#1b71a8] font-semibold mb-2 flex items-center justify-between"
+              >
+                <span>Suhu (W1)</span>
+                <span class="flex items-center gap-3 text-gray-500">
+                  <i
+                    class="fa-solid fa-expand cursor-pointer text-sm hover:text-blue-600 transition"
+                    onclick="fullscreen(this)"
+                  ></i>
+                  <i
+                    class="fa-solid fa-download cursor-pointer text-sm hover:text-green-600 transition"
+                    onclick="downloadChart('chartSuhuW1')"
+                  ></i>
+                </span>
+              </h3>
+              <div class="h-64">
+                <canvas id="chartSuhuW1"></canvas>
+              </div>
+            </div>
+
+            <!-- Gas W1 -->
+            <div class="bg-gray-50 p-4 rounded-lg shadow">
+              <h3
+                class="text-[#1b71a8] font-semibold mb-2 flex items-center justify-between"
+              >
+                <span>Gas CO₂ (W1)</span>
+                <span class="flex items-center gap-3 text-gray-500">
+                  <i
+                    class="fa-solid fa-expand cursor-pointer text-sm hover:text-blue-600 transition"
+                    onclick="fullscreen(this)"
+                  ></i>
+                  <i
+                    class="fa-solid fa-download cursor-pointer text-sm hover:text-green-600 transition"
+                    onclick="downloadChart('chartGasW1')"
+                  ></i>
+                </span>
+              </h3>
+              <div class="h-64">
+                <canvas id="chartGasW1"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== WILAYAH 2 ===================== -->
+        <div
+          id="wilayah2"
+          class="bg-gradient-to-b from-[#A7C8E6] to-[#619AC7] text-white rounded-xl shadow-lg p-6 mb-8 max-w-full"
+        >
+          <h2 class="text-xl font-semibold mb-4">Wilayah 2</h2>
+
+          <div class="flex flex-col gap-6">
+
+            <!-- Getaran W2 -->
+            <div class="bg-gray-50 p-4 rounded-lg shadow">
+              <h3
+                class="text-[#1b71a8] font-semibold mb-2 flex items-center justify-between"
+              >
+                <span>Getaran (W2)</span>
+                <span class="flex items-center gap-3 text-gray-500">
+                  <i
+                    class="fa-solid fa-expand cursor-pointer text-sm hover:text-blue-600 transition"
+                    onclick="fullscreen(this)"
+                  ></i>
+                  <i
+                    class="fa-solid fa-download cursor-pointer text-sm hover:text-green-600 transition"
+                    onclick="downloadChart('chartGetaranW2')"
+                  ></i>
+                </span>
+              </h3>
+              <div class="h-64">
+                <canvas id="chartGetaranW2"></canvas>
+              </div>
+            </div>
+
+            <!-- Tekanan W2 -->
+            <div class="bg-gray-50 p-4 rounded-lg shadow">
+              <h3
+                class="text-[#1b71a8] font-semibold mb-2 flex items-center justify-between"
+              >
+                <span>Tekanan (W2)</span>
+                <span class="flex items-center gap-3 text-gray-500">
+                  <i
+                    class="fa-solid fa-expand cursor-pointer text-sm hover:text-blue-600 transition"
+                    onclick="fullscreen(this)"
+                  ></i>
+                  <i
+                    class="fa-solid fa-download cursor-pointer text-sm hover:text-green-600 transition"
+                    onclick="downloadChart('chartTekananW2')"
+                  ></i>
+                </span>
+              </h3>
+              <div class="h-64">
+                <canvas id="chartTekananW2"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      function toggleWilayah() {
+        const wilayah = document.getElementById("selectWilayah").value;
+
+        const w1 = document.getElementById("wilayah1");
+        const w2 = document.getElementById("wilayah2");
+
+        if (wilayah === "1") {
+          w1.style.display = "block";
+          w2.style.display = "none";
+        } else {
+          w1.style.display = "none";
+          w2.style.display = "block";
+        }
+      }
+
+      // default: tampilkan wilayah 1
+      toggleWilayah();
+    </script>
+
+    <script>
+      function fullscreen(el) {
+        const card = el.closest(".bg-gray-50");
+        if (!card) return;
+        
+        if (!document.fullscreenElement) {
+          card.requestFullscreen().then(() => {
+            // Resize chart setelah masuk fullscreen
+            const canvas = card.querySelector('canvas');
+            if (canvas) {
+              const chartInstance = Chart.getChart(canvas);
+              if (chartInstance) {
+                setTimeout(() => chartInstance.resize(), 100);
+              }
+            }
+          }).catch(err => {
+            console.error('Error entering fullscreen:', err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+
+      // Listen untuk fullscreen change event
+      document.addEventListener('fullscreenchange', function() {
+        if (!document.fullscreenElement) {
+          // Keluar dari fullscreen - resize semua charts
+          setTimeout(() => {
+            const allCanvases = document.querySelectorAll('canvas');
+            allCanvases.forEach(canvas => {
+              const chartInstance = Chart.getChart(canvas);
+              if (chartInstance) {
+                chartInstance.resize();
+              }
+            });
+          }, 100);
+        }
+      });
+    </script>
+
+    <script>
+      function downloadChart(id) {
+        const canvas = document.getElementById(id);
+        const link = document.createElement("a");
+        link.download = `${id}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+    </script>
+
+    <!-- ========================================================= -->
+    <!--                    SCRIPT — CHART DATA                    -->
+    <!-- ========================================================= -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/grafikwil1.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/grafikwil2.js') }}"></script>
+  </body>
+</html>

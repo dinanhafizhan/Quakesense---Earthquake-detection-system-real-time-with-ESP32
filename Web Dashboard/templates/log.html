@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuakeSense — Log Aktivitas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/log.css') }}" />
+
+  <!-- Script untuk apply sidebar state sebelum render -->
+  <script>
+    (function() {
+      const state = localStorage.getItem("sidebarState");
+      if (state === "closed") {
+        document.documentElement.setAttribute("data-sidebar-closed", "true");
+      }
+    })();
+  </script>
+  <style>
+    [data-sidebar-closed="true"] #sidebar {
+      width: 80px !important;
+    }
+    [data-sidebar-closed="true"] #mainContent {
+      margin-left: 90px !important;
+    }
+    [data-sidebar-closed="true"] #sidebarText,
+    [data-sidebar-closed="true"] #menuText span,
+    [data-sidebar-closed="true"] #logoutText span {
+      display: none !important;
+    }
+    [data-sidebar-closed="true"] #arrowIcon {
+      margin-right: 4px;
+    }
+    [data-sidebar-closed="true"] .fa-chevron-left::before {
+      content: "\f054" !important;
+    }
+  </style>
+</head>
+
+<body class="flex">
+  
+<!-- SIDEBAR -->
+<aside id="sidebar" 
+  class="w-[250px] bg-gradient-to-b from-[#3A6F9E] via-[#84B1D7] to-[#A7C8E6] 
+  text-white h-screen shadow-xl fixed left-0 top-0 p-5 border-r border-[#c9e3f2] 
+  flex flex-col transition-all duration-300">
+
+  <!-- TOMBOL PANAH -->
+  <button id="toggleSidebar"
+    class="absolute -right-4 top-4 
+    bg-white text-gray-700 p-2 rounded-full shadow-lg transition">
+    <i id="arrowIcon" class="fa-solid fa-chevron-left"></i>
+  </button>
+
+
+  <!-- Header -->
+  <div class="mb-6 flex items-center gap-3">
+    <img src="static/img/logo.png" 
+         class="h-10 w-auto object-contain" />
+    
+    <div id="sidebarText">
+      <h1 class="text-lg font-bold">QuakeSense</h1>
+      <p class="text-xs opacity-90">Monitoring Gempa</p>
+    </div>
+  </div>
+  
+  <!-- Menu -->
+  <nav id="menuText" class="space-y-2 flex-1">
+
+    <!-- Dashboard -->
+    <a href="/" class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer">
+      <i class="fa-solid fa-gauge"></i> <span>Dashboard</span>
+    </a>
+
+    <!-- Grafik -->
+    <a href="/grafik" class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer">
+      <i class="fa-solid fa-chart-line"></i> <span>Grafik Sensor</span>
+    </a>
+
+    <a
+        href="/data"
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373]"
+        >
+          <i class="fa-solid fa-database"></i>
+          <span>Data Sensor</span>
+        </a>
+
+    <!-- Log -->
+    <a href="/log" class="menu-active flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer">
+      <i class="fa-solid fa-bell"></i> <span>Log Aktivitas</span>
+    </a>
+
+  </nav>
+
+  <div class="border-t border-white/50 my-3"></div>
+
+</aside>
+
+<!-- MAIN CONTENT -->
+<div id="mainContent" class="ml-[260px] w-full p-4 transition-all duration-300">
+ <header class="flex items-center justify-between px-5 py-3 
+               border-2 border-[#6aa3cf] rounded-full bg-white mb-6 shadow-sm">
+
+  <!-- LEFT: TIME + DATE -->
+  <div class="flex items-center gap-3 text-[#4a86b8]">
+      <div class="w-8 h-8 border-2 border-[#6aa3cf] rounded-full flex items-center justify-center">
+        <i class="fa-regular fa-clock text-[#4a86b8] text-lg"></i>
+      </div>
+
+      <div>
+        <h1 id="jamRealtime" class="text-[18px] font-semibold">17.07.15</h1>
+        <p id="tanggalRealtime" class="text-[12px] text-[#7aa9cc]">Minggu, 27 September 2025</p>
+      </div>
+  </div>
+
+  <!-- RIGHT: LIVE STATUS -->
+  <div class="flex items-center gap-2 text-green-600 font-semibold">
+    <span class="w-3 h-3 bg-green-500 rounded-full pulse-animation"></span>
+    <span>Live Monitoring</span>
+  </div>
+
+</header>
+
+<!-- LOG AKTIVITAS -->
+<div class="mx-5">
+
+  <div class="p-4 rounded-xl border-2 border-[#6aa3cf] space-y-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-semibold text-[#3A6F9E]">Riwayat Aktivitas Sistem</h2>
+      <button id="btnClearLogs" class="text-red-500 hover:text-red-700" title="Hapus semua log">
+        <i class="fa-solid fa-trash text-lg"></i>
+      </button>
+    </div>
+
+    <!-- LIST DINAMIS -->
+    <div id="logList" class="space-y-3"></div>
+    <p id="emptyLogs" class="text-sm text-gray-400 hidden">Belum ada aktivitas.</p>
+  </div>
+
+</div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+<script src="{{ url_for('static', filename='js/log_realtime.js') }}"></script>
+<script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+
+</body>
+</html>
+
+

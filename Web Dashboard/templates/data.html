@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuakeSense — Data Sensor</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  
+  <!-- Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/data.css') }}" />
+
+  <!-- Script untuk apply sidebar state sebelum render -->
+  <script>
+    (function() {
+      const state = localStorage.getItem("sidebarState");
+      if (state === "closed") {
+        document.documentElement.setAttribute("data-sidebar-closed", "true");
+      }
+    })();
+  </script>
+  <style>
+    [data-sidebar-closed="true"] #sidebar {
+      width: 80px !important;
+    }
+    [data-sidebar-closed="true"] #mainContent {
+      margin-left: 90px !important;
+    }
+    [data-sidebar-closed="true"] #sidebarText,
+    [data-sidebar-closed="true"] #menuText span,
+    [data-sidebar-closed="true"] #logoutText span {
+      display: none !important;
+    }
+    [data-sidebar-closed="true"] #arrowIcon {
+      margin-right: 4px;
+    }
+    [data-sidebar-closed="true"] .fa-chevron-left::before {
+      content: "\f054" !important;
+    }
+  </style>
+</head>
+
+<body class="flex">
+  <!-- ================= SIDEBAR ================= -->
+  <aside
+    id="sidebar"
+    class="w-[250px] bg-gradient-to-b from-[#3A6F9E] via-[#84B1D7] to-[#A7C8E6] text-white h-screen shadow-xl fixed left-0 top-0 p-5 border-r border-[#c9e3f2] flex flex-col transition-all duration-300"
+  >
+    <!-- Toggle Button -->
+    <button
+      id="toggleSidebar"
+      class="absolute -right-4 top-4 bg-white text-gray-700 p-2 rounded-full shadow-lg transition"
+    >
+      <i id="arrowIcon" class="fa-solid fa-chevron-left"></i>
+    </button>
+
+    <!-- Header -->
+    <div class="mb-6 flex items-center gap-3">
+      <img src="static/img/logo.png" class="h-10 w-auto object-contain" />
+      <div id="sidebarText">
+        <h1 class="text-lg font-bold">QuakeSense</h1>
+        <p class="text-xs opacity-90">Monitoring Gempa</p>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav id="menuText" class="space-y-2 flex-1">
+      <a
+        href="/"
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer transition"
+      >
+        <i class="fa-solid fa-gauge"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a
+        href="/grafik"
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer transition"
+      >
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Grafik Sensor</span>
+      </a>
+
+      <a
+        href="/data"
+        class="menu-active flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer transition"
+      >
+        <i class="fa-solid fa-database"></i>
+        <span>Data Sensor</span>
+      </a>
+
+      <a
+        href="/log"
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#E57373] cursor-pointer transition"
+      >
+        <i class="fa-solid fa-bell"></i>
+        <span>Log Aktivitas</span>
+      </a>
+    </nav>
+
+    <div class="border-t border-white/50 my-3"></div>
+  </aside>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <div id="mainContent" class="ml-[260px] w-full p-4 transition-all duration-300">
+    <!-- Real-time Header -->
+    <header class="flex items-center justify-between px-5 py-3 border-2 border-[#6aa3cf] rounded-full bg-white mb-6 shadow-sm">
+      <div class="flex items-center gap-3 text-[#4a86b8]">
+        <div class="w-8 h-8 border-2 border-[#6aa3cf] rounded-full flex items-center justify-center">
+          <i class="fa-regular fa-clock text-[#4a86b8] text-lg"></i>
+        </div>
+        <div>
+          <h1 id="jamRealtime" class="text-[18px] font-semibold">17.07.15</h1>
+          <p id="tanggalRealtime" class="text-[12px] text-[#7aa9cc]">Minggu, 27 September 2025</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-green-600 font-semibold">
+        <span class="w-3 h-3 bg-green-500 rounded-full pulse-animation"></span>
+        <span>Live Monitoring</span>
+      </div>
+    </header>
+
+    <!-- Page Title -->
+    <header class="flex justify-between items-center mb-6 fade-in-up">
+      <h1 class="text-2xl font-semibold text-[#1b71a8] drop-shadow-lg">Data Sensor</h1>
+    </header>
+
+    <!-- Region Filter -->
+    <div class="mb-4 flex items-center gap-4 slide-in-right">
+      <label class="font-semibold text-[#1b71a8] drop-shadow">Pilih Wilayah:</label>
+      <select
+        id="selectWilayah"
+        class="border border-[#6aa3cf] bg-white px-4 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6aa3cf] hover:border-[#1b71a8] transition"
+        onchange="loadData()"
+      >
+        <option value="1">Wilayah 1</option>
+        <option value="2">Wilayah 2</option>
+      </select>
+    </div>
+
+    <!-- Download Buttons -->
+    <div class="mb-4 flex items-center gap-3 slide-in-right">
+      <button
+        onclick="downloadCSV()"
+        class="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition btn-download"
+      >
+        <i class="fa-solid fa-file-csv"></i> Download CSV
+      </button>
+      <button
+        onclick="downloadPDF()"
+        class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition btn-download"
+      >
+        <i class="fa-solid fa-file-pdf"></i> Download PDF
+      </button>
+    </div>
+
+    <!-- Data Table -->
+    <div class="overflow-x-auto bg-white rounded-xl shadow-lg fade-in-up data-table">
+      <table class="w-full text-sm">
+        <thead class="bg-[#6aa3cf] text-white">
+          <tr id="tableHead">
+            <!-- Populated by JavaScript -->
+          </tr>
+        </thead>
+        <tbody id="tableData" class="divide-y"></tbody>
+      </table>
+    </div>
+  </div>
+
+    <!-- ================= SCRIPT ================= -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/data.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+  </body>
+</html>
+<!-- ================= SCRIPTS ================= -->
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Custom Scripts -->
+  <script src="{{ url_for('static', filename='js/data.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>

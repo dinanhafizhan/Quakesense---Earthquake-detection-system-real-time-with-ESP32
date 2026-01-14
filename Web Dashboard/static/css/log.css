@@ -1,0 +1,209 @@
+/* ===============================================
+   QuakeSense Log Page Styles
+   =============================================== */
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* Active menu indicator */
+.menu-active {
+  background: #E57373 !important;
+  border-left: 4px solid #fff;
+  padding-left: calc(0.75rem - 4px) !important;
+}
+
+/* ===============================================
+   ANIMATIONS
+   =============================================== */
+
+/* Pulse animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Slide down animation for new logs */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 100px;
+  }
+}
+
+.slide-down {
+  animation: slideDown 0.5s ease-out forwards;
+}
+
+/* Shake animation for alerts */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ===============================================
+   COMPONENTS
+   =============================================== */
+
+/* Log item styles */
+.log-item {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.log-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: currentColor;
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.log-item:hover::before {
+  transform: scaleY(1);
+}
+
+.log-item:hover {
+  transform: translateX(8px);
+  box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Badge pulse for danger */
+.badge-danger {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Badge styles */
+.badge {
+  transition: all 0.3s ease;
+}
+
+.badge:hover {
+  transform: scale(1.1);
+}
+
+/* Clear button effect */
+.btn-clear {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-clear::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.btn-clear:hover::after {
+  width: 200px;
+  height: 200px;
+}
+
+.btn-clear:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+}
+
+/* Container styles */
+.log-container {
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Empty state animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Scrollbar custom styling */
+.log-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.log-list::-webkit-scrollbar-thumb {
+  background: rgba(79, 172, 254, 0.5);
+  border-radius: 10px;
+}
+
+.log-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 172, 254, 0.8);
+}
+
+/* Stagger animation for log items */
+.log-item:nth-child(1) { animation-delay: 0.05s; }
+.log-item:nth-child(2) { animation-delay: 0.1s; }
+.log-item:nth-child(3) { animation-delay: 0.15s; }
+.log-item:nth-child(4) { animation-delay: 0.2s; }
+.log-item:nth-child(5) { animation-delay: 0.25s; }
